@@ -1,7 +1,7 @@
 # react-native-svg-uri
 Render SVG images in React Native from an URL or a static file
 
-This was tested with RN 0.33 and react-native-svg 4.3.1 (depends on this library)
+This was tested with RN 0.43 and react-native-svg 5.1.6 (depends on this library)
 [react-native-svg](https://github.com/react-native-community/react-native-svg)
 
 
