@@ -5,20 +5,20 @@ import xmldom from 'xmldom';
 import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
 
 import Svg,{
-    Circle,
-    Ellipse,
-    G ,
-    LinearGradient,
-    RadialGradient,
-    Line,
-    Path,
-    Polygon,
-    Polyline,
-    Rect,
-    Symbol,
-    Use,
-    Defs,
-    Stop
+  Circle,
+  Ellipse,
+  G ,
+  LinearGradient,
+  RadialGradient,
+  Line,
+  Path,
+  Polygon,
+  Polyline,
+  Rect,
+  Symbol,
+  Use,
+  Defs,
+  Stop
 } from 'react-native-svg';
 
 import * as utils from './utils';
@@ -33,11 +33,13 @@ const ACEPTED_SVG_ELEMENTS = [
   'radialGradient',
   'stop',
   'ellipse',
-  'polygon'
+  'polygon',
+  'line',
+  'polyline',
 ];
 
 // Attributes from SVG elements that are mapped directly.
-const SVG_ATTS = ['viewBox'];
+const SVG_ATTS = ['viewBox', 'width', 'height'];
 const G_ATTS = ['id', 'fill'];
 const CIRCLE_ATTS = ['cx', 'cy', 'r', 'fill', 'stroke'];
 const PATH_ATTS = ['d', 'fill', 'stroke'];
@@ -48,14 +50,18 @@ const STOP_ATTS = ['offset'];
 const ELLIPSE_ATTS = ['fill', 'cx', 'cy', 'rx', 'ry'];
 const POLYGON_ATTS = ['points'];
 
+// we don't have support from react-native-svg for these properties
+const IGNORE_STYLE_ATTRS = ['stroke-miterlimit'];
+
 let ind = 0;
 
 class SvgUri extends Component{
 
-	constructor(props){
-		super(props);
+  constructor(props){
+    super(props);
 
     this.state = {svgXmlData: props.svgXmlData};
+    this.state = {fill: props.fill, svgXmlData: props.svgXmlData};
 
     this.createSVGElement     = this.createSVGElement.bind(this);
     this.obtainComponentAtts  = this.obtainComponentAtts.bind(this);
@@ -66,150 +72,163 @@ class SvgUri extends Component{
 
     // Gets the image data from an URL or a static file
     if (props.source) {
-        const source = resolveAssetSource(props.source) || {};
-        this.fecthSVGData(source.uri);
+      const source = resolveAssetSource(props.source) || {};
+      this.fecthSVGData(source.uri);
     }
-	}
+  }
 
   componentWillMount() {
-      this.isComponentMounted = true;
+    this.isComponentMounted = true;
   }
 
   componentWillUnmount() {
-      this.isComponentMounted = false
+    this.isComponentMounted = false
   }
 
   componentWillReceiveProps (nextProps){
     if (nextProps.source) {
-        const source = resolveAssetSource(nextProps.source) || {};
-        const oldSource = resolveAssetSource(this.props.source) || {};
-        if(source.uri !== oldSource.uri){
-            this.fecthSVGData(source.uri);
-        }
+      const source = resolveAssetSource(nextProps.source) || {};
+      const oldSource = resolveAssetSource(this.props.source) || {};
+      if(source.uri !== oldSource.uri){
+        this.fecthSVGData(source.uri);
+      }
+    }
+    if (nextProps.svgXmlData !== this.props.svgXmlData) {
+      this.setState({ svgXmlData: nextProps.svgXmlData });
+    }
+    if (nextProps.fill !== this.props.fill) {
+      this.setState({ fill: nextProps.fill });
     }
   }
 
   async fecthSVGData(uri){
-     let responseXML = null;
-     try {
-         let response = await fetch(uri);
-         responseXML = await response.text();
-     } catch(e) {
-        console.error("ERROR SVG", e);
-     }finally {
-      	if (this.isComponentMounted) {
-      	     this.setState({svgXmlData:responseXML});
-      	}
-     }
-
-     return responseXML;
+  let responseXML = null;
+  try {
+    let response = await fetch(uri);
+    responseXML = await response.text();
+  } catch(e) {
+    console.error("ERROR SVG", e);
+  }finally {
+    if (this.isComponentMounted) {
+      this.setState({svgXmlData:responseXML});
+    }
   }
 
-  createSVGElement(node, childs){
-        let componentAtts = {};
-        let i = ind++;
-        switch (node.nodeName) {
-        case 'svg':
-             componentAtts = this.obtainComponentAtts(node, SVG_ATTS);
-             if (this.props.width)
-                componentAtts.width = this.props.width;
-             if (this.props.height)
-                componentAtts.height = this.props.height;
+  return responseXML;
+}
 
-             return <Svg key={i} {...componentAtts}>{childs}</Svg>;
-        case 'g':
-             componentAtts = this.obtainComponentAtts(node, G_ATTS);
-            return <G key={i} {...componentAtts}>{childs}</G>;
-        case 'path':
-             componentAtts = this.obtainComponentAtts(node, PATH_ATTS);
-            return <Path key={i} {...componentAtts}>{childs}</Path>;
-        case 'circle':
-             componentAtts = this.obtainComponentAtts(node, CIRCLE_ATTS);
-            return <Circle key={i} {...componentAtts}>{childs}</Circle>;
-        case 'rect':
-             componentAtts = this.obtainComponentAtts(node, RECT_ATTS);
-            return <Rect key={i} {...componentAtts}>{childs}</Rect>;
-        case 'linearGradient':
-             componentAtts = this.obtainComponentAtts(node, LINEARG_ATTS);
-            return <Defs key={i}><LinearGradient {...componentAtts}>{childs}</LinearGradient></Defs>;
-        case 'radialGradient':
-             componentAtts = this.obtainComponentAtts(node, RADIALG_ATTS);
-            return <Defs key={i}><RadialGradient {...componentAtts}>{childs}</RadialGradient></Defs>;
-        case 'stop':
-             componentAtts = this.obtainComponentAtts(node, STOP_ATTS);
-            return <Stop key={i} {...componentAtts}>{childs}</Stop>;
-        case 'ellipse':
-             componentAtts = this.obtainComponentAtts(node, ELLIPSE_ATTS);
-            return <Ellipse key={i} {...componentAtts}>{childs}</Ellipse>;
-        case 'polygon':
-             componentAtts = this.obtainComponentAtts(node, POLYGON_ATTS);
-            return <Polygon key={i} {...componentAtts}>{childs}</Polygon>;
-        default:
-          return null;
-        }
+  createSVGElement(node, childs){
+    let componentAtts = {};
+    let i = ind++;
+    switch (node.nodeName) {
+      case 'svg':
+        componentAtts = this.obtainComponentAtts(node, SVG_ATTS);
+        if (this.props.width)
+          componentAtts.width = this.props.width;
+        if (this.props.height)
+          componentAtts.height = this.props.height;
+
+        return <Svg key={i} {...componentAtts}>{childs}</Svg>;
+      case 'g':
+        componentAtts = this.obtainComponentAtts(node, G_ATTS);
+        return <G key={i} {...componentAtts}>{childs}</G>;
+      case 'path':
+        componentAtts = this.obtainComponentAtts(node, PATH_ATTS);
+        return <Path key={i} {...componentAtts}>{childs}</Path>;
+      case 'circle':
+        componentAtts = this.obtainComponentAtts(node, CIRCLE_ATTS);
+        return <Circle key={i} {...componentAtts}>{childs}</Circle>;
+      case 'rect':
+        componentAtts = this.obtainComponentAtts(node, RECT_ATTS);
+        return <Rect key={i} {...componentAtts}>{childs}</Rect>;
+      case 'linearGradient':
+        componentAtts = this.obtainComponentAtts(node, LINEARG_ATTS);
+        return <Defs key={i}><LinearGradient {...componentAtts}>{childs}</LinearGradient></Defs>;
+      case 'radialGradient':
+        componentAtts = this.obtainComponentAtts(node, RADIALG_ATTS);
+        return <Defs key={i}><RadialGradient {...componentAtts}>{childs}</RadialGradient></Defs>;
+      case 'stop':
+        componentAtts = this.obtainComponentAtts(node, STOP_ATTS);
+        return <Stop key={i} {...componentAtts}>{childs}</Stop>;
+      case 'ellipse':
+        componentAtts = this.obtainComponentAtts(node, ELLIPSE_ATTS);
+        return <Ellipse key={i} {...componentAtts}>{childs}</Ellipse>;
+      case 'polygon':
+        componentAtts = this.obtainComponentAtts(node, POLYGON_ATTS);
+        return <Polygon key={i} {...componentAtts}>{childs}</Polygon>;
+      case 'line':
+        componentAtts = this.obtainComponentAtts(node, LINEARG_ATTS);
+        return <Line key={i} {...componentAtts}>{childs}</Line>;
+      case 'polyline':
+        componentAtts = this.obtainComponentAtts(node, POLYGON_ATTS);
+        return <Polyline key={i} {...componentAtts}>{childs}</Polyline>;
+      default:
+        return null;
+    }
   }
 
   obtainComponentAtts({attributes}, enabledAttributes) {
     let styleAtts = {};
     Array.from(attributes).forEach(({nodeName, nodeValue}) => {
-                Object.assign(styleAtts, utils.transformStyle(nodeName, nodeValue, this.props.fill));
-    });
+      Object.assign(styleAtts, utils.transformStyle(nodeName, nodeValue, this.props.fill, IGNORE_STYLE_ATTRS));
+  });
 
     let componentAtts =  Array.from(attributes)
-      .map(utils.camelCaseNodeName)
-      .map(utils.removePixelsFromNodeValue)
-      .filter(utils.getEnabledAttributes(enabledAttributes))
-      .reduce((acc, {nodeName, nodeValue}) => ({
+        .map(utils.camelCaseNodeName)
+        .map(utils.removePixelsFromNodeValue)
+        .map(utils.transformAttrValues)
+        .filter(utils.getEnabledAttributes(enabledAttributes))
+        .reduce((acc, {nodeName, nodeValue}) => ({
         ...acc,
         [nodeName]: this.props.fill && nodeName === 'fill' ? this.props.fill : nodeValue,
-      }), {});
+  }), {});
     Object.assign(componentAtts, styleAtts);
 
     return componentAtts;
   }
 
   inspectNode(node){
-      //Process the xml node
-      let arrayElements = [];
+    //Process the xml node
+    let arrayElements = [];
 
-      // Only process accepted elements
-      if (!ACEPTED_SVG_ELEMENTS.includes(node.nodeName))
-          return null;
-      // if have children process them.
+    // Only process accepted elements
+    if (!ACEPTED_SVG_ELEMENTS.includes(node.nodeName))
+      return null;
+    // if have children process them.
 
-      // Recursive function.
-      if (node.childNodes && node.childNodes.length > 0){
-          for (let i = 0; i < node.childNodes.length; i++){
-              let nodo = this.inspectNode(node.childNodes[i]);
-              if (nodo != null)
-                  arrayElements.push(nodo);
-          }
+    // Recursive function.
+    if (node.childNodes && node.childNodes.length > 0){
+      for (let i = 0; i < node.childNodes.length; i++){
+        let nodo = this.inspectNode(node.childNodes[i]);
+        if (nodo != null)
+          arrayElements.push(nodo);
       }
-      let element = this.createSVGElement(node, arrayElements);
-      return element;
+    }
+    let element = this.createSVGElement(node, arrayElements);
+    return element;
   }
 
-	render(){
+  render(){
     try{
-        if (this.state.svgXmlData == null)
-            return null;
+      if (this.state.svgXmlData == null)
+        return null;
 
-        let inputSVG = this.state.svgXmlData.substring(this.state.svgXmlData.indexOf("<svg "), (this.state.svgXmlData.indexOf("</svg>") + 6));
+      let inputSVG = this.state.svgXmlData.substring(this.state.svgXmlData.indexOf("<svg "), (this.state.svgXmlData.indexOf("</svg>") + 6));
 
-        let doc = new xmldom.DOMParser().parseFromString(inputSVG);
+      let doc = new xmldom.DOMParser().parseFromString(inputSVG);
 
-        let rootSVG = this.inspectNode(doc.childNodes[0]);
+      let rootSVG = this.inspectNode(doc.childNodes[0]);
 
-        return(
-            <View style={this.props.style}>
-              {rootSVG}
-            </View>
-        );
+      return(
+        <View style={this.props.style}>
+      {rootSVG}
+    </View>
+    );
     }catch(e){
       console.error("ERROR SVG", e);
       return null;
     }
-	}
+  }
 }
 
 SvgUri.propTypes = {
