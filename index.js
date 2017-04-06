@@ -35,20 +35,23 @@ const ACEPTED_SVG_ELEMENTS = [
   'ellipse',
   'polygon',
   'line',
-  'polyline',
+  'use',
+  'defs',
+  'polyline'
 ];
 
 // Attributes from SVG elements that are mapped directly.
 const SVG_ATTS = ['viewBox', 'width', 'height'];
-const G_ATTS = ['id', 'fill'];
-const CIRCLE_ATTS = ['cx', 'cy', 'r', 'fill', 'stroke'];
+const G_ATTS = ['id', 'rotate','origin','fill'];
+const CIRCLE_ATTS = ['cx', 'cy', 'r', 'fill'];
 const PATH_ATTS = ['d', 'fill', 'stroke'];
 const RECT_ATTS = ['width', 'height', 'fill', 'stroke', 'x', 'y'];
 const LINEARG_ATTS = ['id', 'x1', 'y1', 'x2', 'y2'];
-const RADIALG_ATTS = ['id', 'cx', 'cy', 'r'];
-const STOP_ATTS = ['offset'];
-const ELLIPSE_ATTS = ['fill', 'cx', 'cy', 'rx', 'ry'];
-const POLYGON_ATTS = ['points'];
+const RADIALG_ATTS = ['id', 'cx', 'cy', 'rx','ry','fx','fy'];
+const STOP_ATTS = ['offset', 'stopColor','stopOpacity'];
+const ELLIPSE_ATTS = ['fill', 'cx', 'cy', 'rx', 'ry','stroke','strokeWidth'];
+const POLYGON_ATTS = ['points', 'fill','stroke'];
+const USE_ATTS = ['href','x','y'];
 
 // we don't have support from react-native-svg for these properties
 const IGNORE_STYLE_ATTRS = ['stroke-miterlimit'];
@@ -162,6 +165,11 @@ class SvgUri extends Component{
       case 'polyline':
         componentAtts = this.obtainComponentAtts(node, POLYGON_ATTS);
         return <Polyline key={i} {...componentAtts}>{childs}</Polyline>;
+      case 'defs':
+        return <Defs key={i}>{childs}</Defs>;
+      case 'use':
+        componentAtts = this.obtainComponentAtts(node, USE_ATTS);
+        return <Use key={i} {...componentAtts}/>;
       default:
         return null;
     }
@@ -180,7 +188,7 @@ class SvgUri extends Component{
         .filter(utils.getEnabledAttributes(enabledAttributes))
         .reduce((acc, {nodeName, nodeValue}) => ({
         ...acc,
-        [nodeName]: this.props.fill && nodeName === 'fill' ? this.props.fill : nodeValue,
+        [nodeName]: this.props.fill && nodeName === 'fill' && nodeValue !== 'none'  ? this.props.fill : nodeValue,
   }), {});
     Object.assign(componentAtts, styleAtts);
 
